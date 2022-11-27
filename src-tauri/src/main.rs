@@ -81,8 +81,7 @@ fn main() {
 
     tauri::Builder::default()
         .system_tray(tray)
-        .invoke_handler(tauri::generate_handler![greet])
-        .invoke_handler(tauri::generate_handler![get_links])
+        .invoke_handler(tauri::generate_handler![greet,get_links])
         .on_system_tray_event(on_system_tray_event)
         .on_window_event(|event| match event.event() {
             tauri::WindowEvent::CloseRequested { api, .. } => {

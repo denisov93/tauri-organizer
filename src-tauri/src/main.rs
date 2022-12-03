@@ -16,10 +16,10 @@ fn get_links() -> String {
 use tauri::{
     api::shell::open, AppHandle, CustomMenuItem,
     SystemTray, SystemTrayEvent, SystemTrayMenu,
-    SystemTrayMenuItem, SystemTraySubmenu,
+    SystemTrayMenuItem, SystemTraySubmenu
 };
-
 use tauri::Manager;
+use cli_clipboard;
 
 const LINKS: [(&str, &str, &str); 7] = [
     // social LINKS
@@ -46,7 +46,12 @@ fn main() {
                 _label.to_string(),
             ));
         }
-
+        
+        let copy = cli_clipboard::get_contents().unwrap();
+        menu = menu.add_item(CustomMenuItem::new(
+            copy.to_string(),
+            copy.to_string(),
+        ));
         SystemTraySubmenu::new("Social", menu)
     };
     let sub_menu_github = {

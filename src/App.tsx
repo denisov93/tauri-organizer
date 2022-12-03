@@ -1,17 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
+import { readText, writeText } from "@tauri-apps/api/clipboard";
 import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [links, getLinks] = useState([]);
+  const [clipboard, setClipboard] = useState(['']) ;
+  const [arrayOfclipboard, setArrayOfclipboard] = useState(['']) ;
+  
+  useEffect(() => {
+    (async () => {
+      const clipboardText = await readText() as string;
+      setClipboard(a=>[clipboardText]);
+      const lastElem = arrayOfclipboard.at(-1) as string;
+      if (lastElem !== clipboard[0]) {
+        setArrayOfclipboard(a=>[...a,clipboard[0]]); 
+      }
+    })();
+  });
   
 
   async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
+      // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+      setGreetMsg(await invoke("greet", { name }));
   }
 
   async function getLinksHandler() {
@@ -53,6 +67,9 @@ function App() {
       </div>
       <p>{greetMsg}</p>
       <p>{links}</p>
+      <p>{clipboard}</p>
+      <hr/>
+      <p>{arrayOfclipboard}</p>
     </div>
   );
 }

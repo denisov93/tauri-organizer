@@ -8,20 +8,28 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [links, getLinks] = useState([]);
-  const [clipboard, setClipboard] = useState(['']) ;
+  const [clipboard, setClipboard] = useState("") ;
+  const [clipResult, setClipResult] = useState("") ;
+
   const [arrayOfclipboard, setArrayOfclipboard] = useState(['']) ;
   
   useEffect(() => {
     (async () => {
-      const clipboardText = await readText() as string;
-      setClipboard(a=>[clipboardText]);
-      const lastElem = arrayOfclipboard.at(-1) as string;
-      if (lastElem !== clipboard[0]) {
-        setArrayOfclipboard(a=>[...a,clipboard[0]]); 
-      }
+      // const clipboardText = await readText() as string;
+      // setClipboard(clipboardText);
+      // setClipboardTray(); 
+      // const lastElem = arrayOfclipboard.at(-1) as string;
+      // if (lastElem !== clipboard) {
+      //   setArrayOfclipboard(a=>[...a,clipboard]);
+      //   console.log(arrayOfclipboard);
+      // }
     })();
   });
   
+
+  async function setClipboardTray() {
+    setClipResult(await invoke("set_clipboard_tray", { clipboard }));
+  }
 
   async function greet() {
       // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command

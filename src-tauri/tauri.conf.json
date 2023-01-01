@@ -62,8 +62,10 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "tauri-organizer",
-        "width": 800
+        "title": "wip:organizer",
+        "width": 600,
+        "minHeight": 600,
+        "minWidth": 600
       }
     ],
     "systemTray": {

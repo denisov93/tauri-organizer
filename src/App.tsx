@@ -42,6 +42,9 @@ function App() {
 
   return (
     <div className="container">
+      <div className="blob"/>
+      <div className="blob-1"/>
+      <div className="blob-2"/>
       <h1>Welcome to Tauri!</h1>
 
       <div className="row">

@@ -57,7 +57,6 @@ impl History {
     
 }
 
-
 fn main() {   
     let history = Arc::new(History::new());
     let cl1 = history.clone();
@@ -75,20 +74,23 @@ fn main() {
         loop {
             let cl2 = history.clone();
             let mut is_cloned = false;
-            let copy = cli_clipboard::get_contents().unwrap();
-            
-            if last_copy != copy {
-                last_copy = copy.clone();
-                cl2.clipboard_history.lock().unwrap().push(copy.clone());
-                let mut flag = cl2.flag.lock().unwrap();
-                *flag = true;
-                is_cloned = true;
+            let copy = cli_clipboard::get_contents();
+            match copy {
+                Ok(copy) => {
+                    if last_copy != copy {
+                        last_copy = copy.clone();
+                        cl2.clipboard_history.lock().unwrap().push(copy.clone());
+                        let mut flag = cl2.flag.lock().unwrap();
+                        *flag = true;
+                        is_cloned = true;
+                    }
+                    
+                    if is_cloned {
+                        tx_clone.lock().unwrap().0.send(cl2.get()).unwrap();
+                    }
+                },
+                _=> {}
             }
-            
-            if is_cloned {
-                tx_clone.lock().unwrap().0.send(cl2.get()).unwrap();
-            }
-
             thread::sleep(Duration::from_millis(1000));
         }
     });
@@ -199,8 +201,8 @@ fn build_system_tray_menu( clipboard_history: Vec<String>) -> SystemTrayMenu {
         if clipboard_history.len() > 0 {
             for item in clipboard_history.iter() {
                 let mut title = item.to_string();
-                if item.len() > 10 {
-                    title = item[0..10].to_string();
+                if item.len() > 20 {
+                    title = item[0..20].to_string();
                     title.push_str(" ...");
                 }
                 menu = menu.add_item(CustomMenuItem::new(

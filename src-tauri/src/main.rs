@@ -3,6 +3,16 @@
     windows_subsystem = "windows"
 )]
 
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use std::sync::mpsc;
+use std::fs::File;
+use std::path::Path;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
+use std::io::{Write, Read};
+
 use tauri::{
     api::shell::open, CustomMenuItem,
     SystemTray, SystemTrayEvent, SystemTrayMenu,
@@ -10,10 +20,11 @@ use tauri::{
 };
 use tauri::{Manager, GlobalWindowEvent};
 use cli_clipboard;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
-use std::sync::mpsc;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
+
+const FILE_PATH: &str = "link_list.json";
 
 const LINKS: [(&str, &str, &str); 7] = [
     // social LINKS
@@ -33,15 +44,61 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_links() -> String {
+fn get_links() -> Vec<Link> {
     dbg!("get_links");
-    format!("Version: {:#?}", LINKS)
+    let mut list = ListLinks::new();
+    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("error");
+    list = serde_json::from_str(&contents).unwrap();
+    list.links
+}
+
+#[tauri::command]
+fn update_list_of_links(links: Vec<Link>) -> String {
+    dbg!("update_list_of_links");
+    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut list = ListLinks::new();
+    list.links = links;
+    let j = serde_json::to_string(&list).unwrap();
+    file.write_all(j.as_bytes()).expect("error");
+    "ok".to_string()
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ListLinks {
+    links: Vec<Link>
+}
+
+impl ListLinks {
+    pub fn new() -> Self {
+        Self {
+            links: Vec::new()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Link {
+    title: String,
+    url: String
+}
+
+impl Link {
+    pub fn new() -> Self {
+        Self {
+            title: String::new(),
+            url: String::new()
+        }
+    }
+    
 }
 
 pub struct History {
     clipboard_history: Mutex<Vec<String>>,
     flag: Mutex<bool>
 }
+
 
 impl History {
     pub fn new() -> Self {
@@ -57,7 +114,38 @@ impl History {
     
 }
 
-fn main() {   
+fn main() {
+    let mut file;
+    let mut list = ListLinks::new();
+    match Path::new(FILE_PATH).try_exists() {
+        Ok(true) => {
+            file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).expect("error");
+            list = serde_json::from_str(&contents).unwrap();
+        },
+        _ =>
+            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap()
+    }
+    
+
+    
+    // let mut contents = String::new();
+    // file.read_to_string(&mut contents).expect("error");
+    
+    // let mut list: ListLinks = serde_json::from_str(&contents).unwrap();
+
+    
+    // let mut link = Link::new();
+    // link.title = "Test".to_string();
+    // link.url = "https://www.google.com".to_string();
+    // list.links.push(link);
+    // let j = serde_json::to_string(&list).unwrap();
+
+    // file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
+    // file.write_all(j.as_bytes()).expect("error");
+    
+
     let history = Arc::new(History::new());
     let cl1 = history.clone();
     let cl3 = history.clone();
@@ -116,7 +204,7 @@ fn main() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet,get_links])
+        .invoke_handler(tauri::generate_handler![greet,get_links,update_list_of_links])
         // .on_system_tray_event(on_system_tray_event)
         .on_system_tray_event(move | app,event| { 
             match event {

@@ -8,52 +8,17 @@
   background-color: #f6f6f6;
 
   height:100%;
-  /* background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 2em,
-      #f77d45 0,
-      #f77d45 5em
-    ),
-    linear-gradient(330deg, #d37b00, #804a00, #1f1200); */
     
   background-blend-mode: screen;
 
   background-size: auto 100%;
-  background-repeat: no-repeat; 
+  background-repeat: no-repeat;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-}
-
-.plaid-background {
-  background:
-      repeating-linear-gradient(
-          -45deg,
-          transparent 0,
-          transparent 25%,
-          dodgerblue 0,
-          dodgerblue 50%
-     ),
-     repeating-linear-gradient(
-          45deg,
-          transparent 0,
-          transparent 25%,
-          tomato 0,
-          tomato 50%
-      ),
-      repeating-linear-gradient(
-          transparent 0,
-          transparent 25%,
-          gold 0,
-          gold 50%
-      ), white;
-  background-blend-mode: multiply;
-  background-size: 100px 100px;
 }
 
 .container {
@@ -63,6 +28,7 @@
   flex-direction: column;
   justify-content: center;
   text-align: center;
+  overflow: auto; 
 }
 
 .logo {
@@ -96,6 +62,7 @@ h1 {
 }
 
 input,
+table,
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -118,6 +85,7 @@ button:hover {
 }
 
 input,
+table,
 button {
   outline: none;
 }
@@ -137,6 +105,7 @@ button {
   }
 
   input,
+  table,
   button {
     color: #ffffff;
     background-color: #0f0f0f98;

@@ -24,7 +24,7 @@ use cli_clipboard;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
-const FILE_PATH: &str = "link_list.json";
+const FILE_PATH: &str = "../dist/link_list.json";
 
 const LINKS: [(&str, &str, &str); 7] = [
     // social LINKS
@@ -63,6 +63,7 @@ fn update_list_of_links(links: Vec<Link>) -> String {
     list.links = links;
     let j = serde_json::to_string(&list).unwrap();
     file.write_all(j.as_bytes()).expect("error");
+    drop(file);
     "ok".to_string()
 }
 
@@ -116,29 +117,35 @@ impl History {
 }
 
 fn main() {
-    let mut file;
-    let mut list = ListLinks::new();
-    match Path::new(FILE_PATH).try_exists() {
-        Ok(true) => {
-            file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).expect("error");
-            list = serde_json::from_str(&contents).unwrap();
-            println!("{:?}", list.links.first())
-        },
-        _ => {
-            let mut link = Link::new();
-            link.title = "Test".to_string();
-            link.url = "https://www.google.com".to_string();
-            list.links.push(link);
-            let j = serde_json::to_string(&list).unwrap();
 
-            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
-            file.write_all(j.as_bytes()).expect("error");
+
+    thread::spawn(move|| {
+        let mut file;
+        let mut list = ListLinks::new();
+        
+        match Path::new(FILE_PATH).try_exists() {
+            Ok(true) => {
+                file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).expect("error");
+                list = serde_json::from_str(&contents).unwrap();
+                println!("{:?}", list.links.first())
+            },
+            _ => {
+                let mut link = Link::new();
+                link.title = "Test".to_string();
+                link.url = "https://www.google.com".to_string();
+                list.links.push(link);
+                let j = serde_json::to_string(&list).unwrap();
+
+                file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
+                file.write_all(j.as_bytes()).expect("error");
+            }
+
         }
-
-    }
-    
+        drop(file);
+        thread::sleep(Duration::from_millis(1000));
+    });
 
     
     // let mut contents = String::new();

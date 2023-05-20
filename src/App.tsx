@@ -96,7 +96,7 @@ function App() {
             onChange={(e) => setUrl(e.currentTarget.value)}
             placeholder="Enter an URL here..."
           />
-          <button className="danger-button" type="button" onClick={() => newTableEntryHandler()}>
+          <button className="danger-button" type="button" onClick={() => updateListOfLinks()}>
             Save
           </button>
       </div>

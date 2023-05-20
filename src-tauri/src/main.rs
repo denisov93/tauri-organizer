@@ -7,10 +7,11 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use std::sync::mpsc;
+use std::fs;
 use std::fs::File;
 use std::path::Path;
 use std::fs::OpenOptions;
-use std::io::prelude::*;
+use std::io::{self, prelude::*};
 use std::io::{Write, Read};
 
 use tauri::{
@@ -45,26 +46,22 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn get_links() -> Vec<Link> {
-    dbg!("get_links");
     let mut list = ListLinks::new();
     let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("error");
     list = serde_json::from_str(&contents).unwrap();
-    dbg!(&list.links);
     list.links
 }
 
 #[tauri::command]
 fn update_list_of_links(links: Vec<Link>) -> String {
-    dbg!("update_list_of_links");
-    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut file = OpenOptions::new().write(true).truncate(true).read(true).open(FILE_PATH).unwrap();
     let mut list = ListLinks::new();
     list.links = links;
     let j = serde_json::to_string(&list).unwrap();
     file.write_all(j.as_bytes()).expect("error");
-    drop(file);
-    "ok".to_string()
+    return "ok".to_string();
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -117,35 +114,29 @@ impl History {
 }
 
 fn main() {
+    let mut file;
+    let mut list = ListLinks::new();
+    
+    match Path::new(FILE_PATH).try_exists() {
+        Ok(true) => {
+            file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).expect("error");
+            list = serde_json::from_str(&contents).unwrap();
+            println!("{:?}", list.links.first())
+        },
+        _ => {
+            let mut link = Link::new();
+            link.title = "Test".to_string();
+            link.url = "https://www.google.com".to_string();
+            list.links.push(link);
+            let j = serde_json::to_string(&list).unwrap();
 
-
-    thread::spawn(move|| {
-        let mut file;
-        let mut list = ListLinks::new();
-        
-        match Path::new(FILE_PATH).try_exists() {
-            Ok(true) => {
-                file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
-                let mut contents = String::new();
-                file.read_to_string(&mut contents).expect("error");
-                list = serde_json::from_str(&contents).unwrap();
-                println!("{:?}", list.links.first())
-            },
-            _ => {
-                let mut link = Link::new();
-                link.title = "Test".to_string();
-                link.url = "https://www.google.com".to_string();
-                list.links.push(link);
-                let j = serde_json::to_string(&list).unwrap();
-
-                file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
-                file.write_all(j.as_bytes()).expect("error");
-            }
-
+            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
+            file.write_all(j.as_bytes()).expect("error");
         }
-        drop(file);
-        thread::sleep(Duration::from_millis(1000));
-    });
+
+    }
 
     
     // let mut contents = String::new();

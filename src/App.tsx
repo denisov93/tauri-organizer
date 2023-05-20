@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import { readText, writeText } from "@tauri-apps/api/clipboard";
+import { message } from '@tauri-apps/api/dialog';
 import "./App.css";
 
 type TableData = { title: string, url: string };
@@ -40,9 +41,23 @@ function App() {
   }
 
   async function updateListOfLinks() {
-    const entry: TableData = { title: "Bloq it", url: "www.bloqit.com"};
-    getLinks([...links, entry]);
-    await invoke("update_list_of_links", { links });
+    if (title.length < 3 && url.length < 3) {
+      return await message('Tauri is awesome', 'Tauri');
+    }
+    if (!url.includes("http")) {
+      return await message('Please enter a valid URL', 'Tauri');
+    }
+    const entry: TableData = { title, url };
+    await invoke("update_list_of_links", { links : [...links, entry] });
+    setTitle("");
+    setUrl("");
+    await getLinksHandler();
+  }
+
+  async function deleteLinkHandler(entry: TableData) {
+    const filteredLinks = links.filter((link) => link.url !== entry.url && link.title !== entry.title);
+    await invoke("update_list_of_links", { links : filteredLinks });
+    await getLinksHandler();
   }
 
   useEffect(() => {
@@ -56,43 +71,16 @@ function App() {
       <div className="blob-2"/>
       <h1>All your links in one place</h1>
 
-      {/* <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div> */}
-
-      {/* <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <div className="row">
-        <div>
-          <input
-            id="greet-input"
-            onChange={(e) => setName(e.currentTarget.value)}
-            placeholder="Enter a name..."
-          />
-          <button type="button" onClick={() => greet()}>
-            Greet
-          </button>
-          <button type="button" onClick={() => getLinksHandler()}>
-            Get Links
-          </button>
-        </div>
-      </div> */}
       <div className="row top-margin">
       <input
             id="title-input"
+            value={title}
             onChange={(e) => setTitle(e.currentTarget.value)}
             placeholder="Enter a title here."
           />
       <input
             id="link-input"
+            value={url}
             onChange={(e) => setUrl(e.currentTarget.value)}
             placeholder="Enter an URL here..."
           />
@@ -131,7 +119,7 @@ function App() {
                     <button className="danger-button" type="button" role="link" onClick={() => openInNewTab(value.url)}>
                       Go To Url
                     </button>
-                    <button type="button" onClick={() => {}}>
+                    <button type="button" onClick={() => {deleteLinkHandler(value)}}>
                       Delete
                     </button>
                   </td>

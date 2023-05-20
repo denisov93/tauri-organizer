@@ -124,8 +124,17 @@ fn main() {
             file.read_to_string(&mut contents).expect("error");
             list = serde_json::from_str(&contents).unwrap();
         },
-        _ =>
-            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap()
+        _ => {
+            let mut link = Link::new();
+            link.title = "Test".to_string();
+            link.url = "https://www.google.com".to_string();
+            list.links.push(link);
+            let j = serde_json::to_string(&list).unwrap();
+            
+            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
+            file.write_all(j.as_bytes()).expect("error");
+        }
+
     }
     
 
@@ -136,14 +145,6 @@ fn main() {
     // let mut list: ListLinks = serde_json::from_str(&contents).unwrap();
 
     
-    // let mut link = Link::new();
-    // link.title = "Test".to_string();
-    // link.url = "https://www.google.com".to_string();
-    // list.links.push(link);
-    // let j = serde_json::to_string(&list).unwrap();
-
-    // file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
-    // file.write_all(j.as_bytes()).expect("error");
     
 
     let history = Arc::new(History::new());

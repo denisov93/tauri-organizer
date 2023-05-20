@@ -31,10 +31,12 @@ function App() {
   //     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
   //     setGreetMsg(await invoke("greet", { name }));
   // }
+  const openInNewTab = (url) => {
+    window.open(url, "_blank", "noreferrer");
+  };
 
   async function getLinksHandler() {
     getLinks(await invoke("get_links"));
-    console.log(links);
   }
 
   async function updateListOfLinks() {
@@ -42,6 +44,10 @@ function App() {
     getLinks([...links, entry]);
     await invoke("update_list_of_links", { links });
   }
+
+  useEffect(() => {
+    getLinksHandler();
+  }, []);
 
   return (
     <div className="container">
@@ -90,7 +96,7 @@ function App() {
             onChange={(e) => setUrl(e.currentTarget.value)}
             placeholder="Enter an URL here..."
           />
-          <button type="button" onClick={() => newTableEntryHandler()}>
+          <button className="danger-button" type="button" onClick={() => newTableEntryHandler()}>
             Save
           </button>
       </div>
@@ -116,34 +122,22 @@ function App() {
             </tr>
           </tfoot>
           <tbody className="table-body">
-            {tableData.map((value, index) => {
+            {links.map((value, index) => {
               return (
                 <tr key={index}>
                   <td>{value.title}</td>
                   <td className="link">{value.url}</td>
                   <td>
-                    <button type="button" onClick={() => {}}>
-                      Greet
+                    <button className="danger-button" type="button" role="link" onClick={() => openInNewTab(value.url)}>
+                      Go To Url
                     </button>
-                    <button className="danger-button" type="button" onClick={() => {}}>
+                    <button type="button" onClick={() => {}}>
                       Delete
                     </button>
                   </td>
                 </tr>
               )
             })}
-            <tr>
-              <td>Bloqit admin</td>
-              <td className="link">https://stackoverflow.com/questions/17954181/scrolling-only-content-div-others-should-be-fixed</td>
-              <td>
-                <button type="button" onClick={() => {}}>
-                  Greet
-                </button>
-                <button className="danger-button" type="button" onClick={() => {}}>
-                  Delete
-                </button>
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>

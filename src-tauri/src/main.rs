@@ -51,6 +51,7 @@ fn get_links() -> Vec<Link> {
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("error");
     list = serde_json::from_str(&contents).unwrap();
+    dbg!(&list.links);
     list.links
 }
 
@@ -123,6 +124,7 @@ fn main() {
             let mut contents = String::new();
             file.read_to_string(&mut contents).expect("error");
             list = serde_json::from_str(&contents).unwrap();
+            println!("{:?}", list.links.first())
         },
         _ => {
             let mut link = Link::new();
@@ -130,7 +132,7 @@ fn main() {
             link.url = "https://www.google.com".to_string();
             list.links.push(link);
             let j = serde_json::to_string(&list).unwrap();
-            
+
             file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
             file.write_all(j.as_bytes()).expect("error");
         }

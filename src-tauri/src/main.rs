@@ -21,7 +21,7 @@ use cli_clipboard;
 
 use serde::{Deserialize, Serialize};
 
-const FILE_PATH: &str = "../dist/link_list.json";
+const FILE_PATH: &str = "link_list.json";
 
 const LINKS: [(&str, &str, &str); 7] = [
     // social LINKS

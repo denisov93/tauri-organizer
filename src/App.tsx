@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
-import { readText, writeText } from "@tauri-apps/api/clipboard";
 import { message } from '@tauri-apps/api/dialog';
 import "./App.css";
 

@@ -16,14 +16,33 @@ use tauri::{
     SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem, SystemTraySubmenu
 };
-use tauri::{Manager, GlobalWindowEvent, Window};
+use tauri::{Manager, GlobalWindowEvent};
 use cli_clipboard;
-
+use std::sync::atomic::{AtomicBool, Ordering};
 use serde::{Deserialize, Serialize};
 
-const FILE_PATH: &str = "link_list.json";
+static GLOBAL_FLAG: AtomicBool = AtomicBool::new(false);
 
-const LINKS: [(&str, &str, &str); 7] = [
+pub fn set_flag_to_true() {
+    GLOBAL_FLAG.store(true, Ordering::SeqCst);
+}
+
+pub fn set_flag_to_false() {
+    GLOBAL_FLAG.store(false, Ordering::SeqCst);
+}
+
+pub fn get_flag() -> bool {
+    GLOBAL_FLAG.load(Ordering::SeqCst)
+}
+
+pub fn get_flag_and_set_to_true() -> bool {
+    GLOBAL_FLAG.swap(true, Ordering::SeqCst)
+}
+
+const FILE_PATH: &str = "../dist/link_list.json"; // DEV
+// const FILE_PATH: &str = "link_list.json"; // PROD
+
+const LINKS: [(&str, &str, &str); 6] = [
     // social LINKS
     ("open-social-prod", "Bloqit Prod","https://admin.bloq.it/en/dashboard"),
     ("open-social-dev", "Bloqit Dev","https://admin.dev.bloq.it/en/dashboard"),
@@ -32,7 +51,7 @@ const LINKS: [(&str, &str, &str); 7] = [
     ("open-github-my", "My GitHub","https://github.com/denisov93"),
     ("open-github-vue", "Bloqit Vue","https://github.com/bloqit/vue-backoffice"),
     ("open-github-node", "Bloqit Node","https://github.com/bloqit/nodejs-backend"),
-    ("open-github-rust-adventure", "Rust Adventure Example","https://github.com/rust-adventure/yt-tauri-menubar-example"),
+
 ];
 
 
@@ -56,14 +75,16 @@ fn get_links() -> Vec<Link> {
 }
 
 #[tauri::command]
-fn update_list_of_links(links: Vec<Link>,window: Window) -> String {
+fn update_list_of_links(links: Vec<Link>) -> String {
     let mut file = OpenOptions::new().write(true).truncate(true).read(true).open(FILE_PATH).unwrap();
     let mut list = ListLinks::new();
     list.links = links;
     let j = serde_json::to_string(&list).unwrap();
     file.write_all(j.as_bytes()).expect("error");
+
     return "ok".to_string();
 }
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ListLinks {
@@ -149,7 +170,9 @@ fn main() {
 
     }
 
-    
+    let flag = Arc::new(Mutex::new(false));
+    let flag_clone = flag.clone();
+
     let history = Arc::new(History::new());
     let cl1 = history.clone();
     let cl3 = history.clone();
@@ -211,6 +234,11 @@ fn main() {
         .invoke_handler(tauri::generate_handler![get_links_location,get_links,update_list_of_links])
         // .on_system_tray_event(on_system_tray_event)
         .on_system_tray_event(move | app,event| { 
+            if get_flag() {
+                let tray_menu = build_system_tray_menu(cl1.get());
+                app.tray_handle().set_menu(tray_menu).unwrap();
+                set_flag_to_false();
+            }
             match event {
                 SystemTrayEvent::MenuItemClick { id, .. } => {
                     let item_handle =
@@ -289,6 +317,9 @@ fn on_window_event(
     event: GlobalWindowEvent
 ) {
     match event.event() {
+        tauri::WindowEvent::Focused(false) => {
+            set_flag_to_true();
+        }
         tauri::WindowEvent::CloseRequested { api, .. } => {
             // don't kill the app when the user clicks close. this is important
             event.window().hide().unwrap();

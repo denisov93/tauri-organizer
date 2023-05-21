@@ -29,7 +29,7 @@ function App() {
 
   async function updateListOfLinks() {
     if (title.length < 3 && url.length < 3) {
-      return await message('Tauri is awesome', 'Tauri');
+      return await message('Cannot be empty', 'Tauri');
     }
     if (!url.includes("http")) {
       return await message('Please enter a valid URL', 'Tauri');

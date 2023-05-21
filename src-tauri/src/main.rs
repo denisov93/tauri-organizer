@@ -7,11 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use std::sync::mpsc;
-use std::fs;
-use std::fs::File;
 use std::path::Path;
 use std::fs::OpenOptions;
-use std::io::{self, prelude::*};
 use std::io::{Write, Read};
 
 use tauri::{
@@ -19,11 +16,10 @@ use tauri::{
     SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem, SystemTraySubmenu
 };
-use tauri::{Manager, GlobalWindowEvent};
+use tauri::{Manager, GlobalWindowEvent, Window};
 use cli_clipboard;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 
 const FILE_PATH: &str = "../dist/link_list.json";
 
@@ -39,10 +35,15 @@ const LINKS: [(&str, &str, &str); 7] = [
     ("open-github-rust-adventure", "Rust Adventure Example","https://github.com/rust-adventure/yt-tauri-menubar-example"),
 ];
 
+
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn get_links_location() -> String {
+    let full_path = Path::new(&FILE_PATH.to_string())
+        .canonicalize()
+        .expect("Failed to get the full path.");
+    full_path.to_str().unwrap().to_string()
 }
+
 
 #[tauri::command]
 fn get_links() -> Vec<Link> {
@@ -55,7 +56,7 @@ fn get_links() -> Vec<Link> {
 }
 
 #[tauri::command]
-fn update_list_of_links(links: Vec<Link>) -> String {
+fn update_list_of_links(links: Vec<Link>,window: Window) -> String {
     let mut file = OpenOptions::new().write(true).truncate(true).read(true).open(FILE_PATH).unwrap();
     let mut list = ListLinks::new();
     list.links = links;
@@ -79,6 +80,7 @@ impl ListLinks {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Link {
+    id: String,
     title: String,
     url: String
 }
@@ -86,6 +88,7 @@ struct Link {
 impl Link {
     pub fn new() -> Self {
         Self {
+            id: String::new(),
             title: String::new(),
             url: String::new()
         }
@@ -113,6 +116,14 @@ impl History {
     
 }
 
+fn get_list_from_file() -> Vec<Link> {
+    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("error");
+    let list: ListLinks = serde_json::from_str(&contents).unwrap();
+    list.links
+}
+
 fn main() {
     let mut file;
     let mut list = ListLinks::new();
@@ -123,11 +134,11 @@ fn main() {
             let mut contents = String::new();
             file.read_to_string(&mut contents).expect("error");
             list = serde_json::from_str(&contents).unwrap();
-            println!("{:?}", list.links.first())
         },
         _ => {
             let mut link = Link::new();
-            link.title = "Test".to_string();
+            link.id = "links-google".to_string();
+            link.title = "google".to_string();
             link.url = "https://www.google.com".to_string();
             list.links.push(link);
             let j = serde_json::to_string(&list).unwrap();
@@ -139,14 +150,6 @@ fn main() {
     }
 
     
-    // let mut contents = String::new();
-    // file.read_to_string(&mut contents).expect("error");
-    
-    // let mut list: ListLinks = serde_json::from_str(&contents).unwrap();
-
-    
-    
-
     let history = Arc::new(History::new());
     let cl1 = history.clone();
     let cl3 = history.clone();
@@ -205,7 +208,7 @@ fn main() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet,get_links,update_list_of_links])
+        .invoke_handler(tauri::generate_handler![get_links_location,get_links,update_list_of_links])
         // .on_system_tray_event(on_system_tray_event)
         .on_system_tray_event(move | app,event| { 
             match event {
@@ -236,6 +239,19 @@ fn main() {
                             app.tray_handle().set_menu(tray_menu).unwrap();
                         }
                         "quit" => app.exit(0),
+                        s if s.starts_with("links-") => {
+                            let mut list = get_list_from_file();
+                            for link in list.iter_mut() {
+                                if link.id == s {
+                                    open(
+                                        &app.shell_scope(),
+                                        link.url.clone(),
+                                        None,
+                                    )
+                                    .unwrap();
+                                }
+                            }
+                        }
                         s if s.starts_with("open-") => {
                             if let Some(link) = LINKS
                                 .iter()
@@ -342,9 +358,22 @@ fn build_system_tray_menu( clipboard_history: Vec<String>) -> SystemTrayMenu {
 
         SystemTraySubmenu::new("GitHub", menu)
     };
+
+    let sub_menu_links = {
+        let mut menu = SystemTrayMenu::new();
+        for link in get_list_from_file().iter() {
+            menu = menu.add_item(CustomMenuItem::new(
+                link.id.to_string(),
+                link.title.to_string(),
+            ));
+        };
+
+        SystemTraySubmenu::new("Links", menu)
+    };
  
     SystemTrayMenu::new()
         .add_submenu(copy_paste_menu)
+        .add_submenu(sub_menu_links)
         .add_submenu(sub_menu_social)
         .add_submenu(sub_menu_github)
         .add_native_item(SystemTrayMenuItem::Separator)

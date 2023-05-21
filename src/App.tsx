@@ -5,34 +5,21 @@ import { readText, writeText } from "@tauri-apps/api/clipboard";
 import { message } from '@tauri-apps/api/dialog';
 import "./App.css";
 
-type TableData = { title: string, url: string };
+type TableData = { id: string, title: string, url: string };
 
 function App() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [tableData, setTableData] = useState([
-    { title: "Bloq it", url: "www.bloqit.com"},
-    { title: "Bloq it", url: "www.bloqit.com"},
-    { title: "Bloq it", url: "www.bloqit.com"}
-  ]);
-
   const [links, getLinks] = useState<TableData[]>([]);
   
-  async function newTableEntryHandler() {
-    if (title.length > 3 && url.length > 3) {
-      // setTableData(await invoke("new_table_entry", { title, url }));
-      setTitle("");
-      setUrl("");
-    }  
 
+
+  async function getLinksLocation() {
+      // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+      await message(await invoke("get_links_location"), 'Links');
   }
 
-
-  // async function greet() {
-  //     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-  //     setGreetMsg(await invoke("greet", { name }));
-  // }
-  const openInNewTab = (url) => {
+  const openInNewTab = (url:string) => {
     window.open(url, "_blank", "noreferrer");
   };
 
@@ -47,7 +34,7 @@ function App() {
     if (!url.includes("http")) {
       return await message('Please enter a valid URL', 'Tauri');
     }
-    const entry: TableData = { title, url };
+    const entry: TableData = { id:`links-${title}`, title, url };
     await invoke("update_list_of_links", { links : [...links, entry] });
     setTitle("");
     setUrl("");
@@ -97,18 +84,6 @@ function App() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tfoot>
-            <tr> 
-              <td colSpan={3}>
-                <button type="button" onClick={() => updateListOfLinks()}>
-                  Greet
-                </button>
-                <button type="button" onClick={() => getLinksHandler()}>
-                  Get Links
-                </button>
-              </td>
-            </tr>
-          </tfoot>
           <tbody className="table-body">
             {links.map((value, index) => {
               return (
@@ -127,6 +102,18 @@ function App() {
               )
             })}
           </tbody>
+          <tfoot>
+            <tr> 
+              <td colSpan={3}>
+                <button type="button" onClick={() => getLinksLocation()}>
+                  Get Links Location
+                </button>
+                <button type="button" onClick={() => {}}>
+                  Get Links
+                </button>
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

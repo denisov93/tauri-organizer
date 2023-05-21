@@ -21,6 +21,11 @@ thead th:last-child {
     width: 156px; /* 140px + 16px scrollbar width */
 }
 
+tfoot {
+    display: table-footer-group;
+    width: calc(100% - 16px); /* Adjust for scrollbar */
+}
+
 .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }

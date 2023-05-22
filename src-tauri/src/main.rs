@@ -21,7 +21,11 @@ use cli_clipboard;
 
 use serde::{Deserialize, Serialize};
 
+extern crate directories;
+use directories::{BaseDirs, UserDirs, ProjectDirs};
+
 const FILE_PATH: &str = "link_list.json";
+// const FILE_PATH: &str = "../dist/link_list.json";
 
 const LINKS: [(&str, &str, &str); 7] = [
     // social LINKS
@@ -127,7 +131,9 @@ fn get_list_from_file() -> Vec<Link> {
 fn main() {
     let mut file;
     let mut list = ListLinks::new();
-    
+    if let Some(proj_dirs) = ProjectDirs::from("com", "alexander.den", "tauri-organizer") {
+        println!("ProjectDirs.config_dir(): {:#?}", proj_dirs.config_dir());
+    }
     match Path::new(FILE_PATH).try_exists() {
         Ok(true) => {
             file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();

@@ -22,6 +22,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use serde::{Deserialize, Serialize};
 
 static GLOBAL_FLAG: AtomicBool = AtomicBool::new(false);
+extern crate directories;
+use directories::{BaseDirs, UserDirs, ProjectDirs};
+
+const FILE_PATH: &str = "link_list.json";
+// const FILE_PATH: &str = "../dist/link_list.json";
 
 pub fn set_flag_to_true() {
     GLOBAL_FLAG.store(true, Ordering::SeqCst);
@@ -148,7 +153,9 @@ fn get_list_from_file() -> Vec<Link> {
 fn main() {
     let mut file;
     let mut list = ListLinks::new();
-    
+    if let Some(proj_dirs) = ProjectDirs::from("com", "alexander.den", "tauri-organizer") {
+        println!("ProjectDirs.config_dir(): {:#?}", proj_dirs.config_dir());
+    }
     match Path::new(FILE_PATH).try_exists() {
         Ok(true) => {
             file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();

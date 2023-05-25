@@ -3390,6 +3390,7 @@ version = "0.0.0"
 dependencies = [
  "cli-clipboard",
  "directories",
+ "lazy_static",
  "serde",
  "serde_json",
  "tauri",

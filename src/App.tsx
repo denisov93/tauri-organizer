@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from '@tauri-apps/api/dialog';
+import { open } from '@tauri-apps/api/shell';
 import "./App.css";
 
 type TableData = { id: string, title: string, url: string };
@@ -17,8 +18,8 @@ function App() {
       await message(await invoke("get_links_location"), 'Links');
   }
 
-  const openInNewTab = (url:string) => {
-    window.open(url, "_blank", "noreferrer");
+  const openInNewTab = async (url:string) => {
+    await open(url);
   };
 
   async function getLinksHandler() {

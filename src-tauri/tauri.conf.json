@@ -39,7 +39,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.alexander.den",
+      "identifier": "com.altofire",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -68,7 +68,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "wip:organizer",
+        "title": "Link Organizer",
         "width": 600,
         "minHeight": 600,
         "minWidth": 600

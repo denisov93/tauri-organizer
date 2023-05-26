@@ -107,9 +107,9 @@ function App() {
                 <button type="button" onClick={() => getLinksLocation()}>
                   Get Links Location
                 </button>
-                <button type="button" onClick={() => {}}>
+                {/* <button type="button" onClick={() => {}}>
                   Get Links
-                </button>
+                </button> */}
               </td>
             </tr>
           </tfoot>

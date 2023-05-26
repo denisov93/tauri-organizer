@@ -23,10 +23,8 @@ use serde::{Deserialize, Serialize};
 
 static GLOBAL_FLAG: AtomicBool = AtomicBool::new(false);
 extern crate directories;
-use directories::{BaseDirs, UserDirs, ProjectDirs};
+use directories::ProjectDirs;
 
-const FILE_PATH: &str = "link_list.json";
-// const FILE_PATH: &str = "../dist/link_list.json";
 
 pub fn set_flag_to_true() {
     GLOBAL_FLAG.store(true, Ordering::SeqCst);

@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 
+use std::fs::{self, File};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -23,7 +24,8 @@ use serde::{Deserialize, Serialize};
 
 static GLOBAL_FLAG: AtomicBool = AtomicBool::new(false);
 extern crate directories;
-use directories::ProjectDirs;
+
+use platform_dirs::AppDirs;
 
 
 pub fn set_flag_to_true() {
@@ -42,8 +44,14 @@ pub fn get_flag_and_set_to_true() -> bool {
     GLOBAL_FLAG.swap(true, Ordering::SeqCst)
 }
 
-const FILE_PATH: &str = "../dist/link_list.json"; // DEV
-// const FILE_PATH: &str = "link_list.json"; // PROD
+pub fn get_path() -> std::path::PathBuf {
+    let app_dirs = AppDirs::new(Some("tauri-organizer"), true).unwrap();
+    let config_file_path = app_dirs.config_dir.join(FILE_PATH);
+    config_file_path
+}
+
+// const FILE_PATH: &str = "../dist/link_list.json"; // DEV
+const FILE_PATH: &str = "link_list.json"; // PROD
 
 const LINKS: [(&str, &str, &str); 6] = [
     // social LINKS
@@ -70,7 +78,7 @@ fn get_links_location() -> String {
 #[tauri::command]
 fn get_links() -> Vec<Link> {
     let mut list = ListLinks::new();
-    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut file = OpenOptions::new().write(true).read(true).open(get_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("error");
     list = serde_json::from_str(&contents).unwrap();
@@ -79,7 +87,8 @@ fn get_links() -> Vec<Link> {
 
 #[tauri::command]
 fn update_list_of_links(links: Vec<Link>) -> String {
-    let mut file = OpenOptions::new().write(true).truncate(true).read(true).open(FILE_PATH).unwrap();
+    let path = get_path();
+    let mut file = OpenOptions::new().write(true).truncate(true).read(true).open(path).unwrap();
     let mut list = ListLinks::new();
     list.links = links;
     let j = serde_json::to_string(&list).unwrap();
@@ -141,7 +150,7 @@ impl History {
 }
 
 fn get_list_from_file() -> Vec<Link> {
-    let mut file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
+    let mut file = OpenOptions::new().write(true).read(true).open(get_path()).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("error");
     let list: ListLinks = serde_json::from_str(&contents).unwrap();
@@ -149,31 +158,38 @@ fn get_list_from_file() -> Vec<Link> {
 }
 
 fn main() {
-    let mut file;
     let mut list = ListLinks::new();
-    if let Some(proj_dirs) = ProjectDirs::from("com", "alexander.den", "tauri-organizer") {
-        println!("ProjectDirs.config_dir(): {:#?}", proj_dirs.config_dir());
-    }
-    match Path::new(FILE_PATH).try_exists() {
-        Ok(true) => {
-            file = OpenOptions::new().write(true).read(true).open(FILE_PATH).unwrap();
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).expect("error");
-            list = serde_json::from_str(&contents).unwrap();
-        },
-        _ => {
-            let mut link = Link::new();
-            link.id = "links-google".to_string();
-            link.title = "google".to_string();
-            link.url = "https://www.google.com".to_string();
-            list.links.push(link);
-            let j = serde_json::to_string(&list).unwrap();
 
-            file = OpenOptions::new().write(true).read(true).create(true).open(FILE_PATH).unwrap();   
-            file.write_all(j.as_bytes()).expect("error");
+    let app_dirs = AppDirs::new(Some("tauri-organizer"), true).unwrap();
+    let config_file_path = app_dirs.config_dir.join(FILE_PATH);
+
+    fs::create_dir_all(&app_dirs.config_dir).unwrap();
+
+    let _file = if config_file_path.exists() {
+        let file = OpenOptions::new().write(true).read(true).open(config_file_path);
+        match file {
+            Ok(mut f) => {
+                let mut contents = String::new();
+                f.read_to_string(&mut contents).expect("error");
+                list = serde_json::from_str(&contents).unwrap();
+            },
+            Err(e) => panic!("Error opening file: {}", e),
         }
-
-    }
+    } else {
+        let mut link = Link::new();
+        link.id = "links-google".to_string();
+        link.title = "google".to_string();
+        link.url = "https://www.google.com".to_string();
+        list.links.push(link);
+        let j = serde_json::to_string(&list).unwrap();
+    
+        match OpenOptions::new().write(true).read(true).create(true).open(config_file_path) {
+            Ok(mut f) => {
+                f.write_all(j.as_bytes()).expect("error");
+            },
+            Err(e) => panic!("Error opening file: {}", e),
+        }
+    };
 
     let flag = Arc::new(Mutex::new(false));
     let flag_clone = flag.clone();
